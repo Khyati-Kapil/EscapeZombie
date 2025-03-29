@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Escape Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #222;
+            color: white;
+            overflow: hidden;
+            position: relative;
+            background-image: url("spooky-illustration-zombie-cemetery_251819-928.avif");
+            
+        }       
+        #gameBoard {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            margin: 20px auto;
+            background: radial-gradient(circle, #444, #111);
+            border: 3px solid white;
+            border-radius: 15px;
+        }
+        .entity {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            font-size: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .player { background: rgb(252, 228, 186); border-radius: 50%; }
+        .zombie { background: rgb(185, 26, 26); border-radius: 50%; }
+        .exit { background: rgb(28, 228, 28); border-radius: 50%; }
+        
+        .popup, #startScreen {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+            z-index: 1000;
+        }
+        .button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: rgb(127, 250, 82);
+            color: black;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧟‍♂️ Zombie Escape 🏃‍♂️</h1>
+    <p>Use Arrow Keys to escape! Avoid zombies and reach the exit!</p>
+    <p id="status"></p>
+    <p>Highest Score: <span id="highScore">0</span></p>
+    <div id="gameBoard"></div>
+    <div id="popup" class="popup">
+        <p id="popupMessage"></p>
+        <button class="button" onclick="resetGame()">Restart</button>
+    </div>
+    <div id="startScreen" class="popup">
+        <p>Welcome to Zombie Escape!</p>
+        <button class="button" onclick="startGame()">Start Game</button>
+    </div>
+    
+    <script>
+        const size = 560;
+        let player = { x: 0, y: 0 };
+        let exit = { x: 560, y: 560 };
+        let zombies = [];
+        let moves = 0;
+        let gameStarted = false;
+        let highScore = localStorage.getItem("highScore") || 0;
+        document.getElementById("highScore").textContent = highScore;
+        const board = document.getElementById("gameBoard");
+        const popup = document.getElementById("popup");
+        const popupMessage = document.getElementById("popupMessage");
+        const startScreen = document.getElementById("startScreen");
+
+        function createEntity(entity, className) {
+            let elem = document.createElement("div");
+            elem.classList.add("entity", className);
+            elem.style.left = `${entity.x}px`;
+            elem.style.top = `${entity.y}px`;
+            elem.textContent = className === "player" ? "👱🏼" : className === "exit" ? "🏁" : "🧟";
+            board.appendChild(elem);
+        }
+
+        function drawBoard() {
+            board.innerHTML = "";
+            createEntity(player, "player");
+            createEntity(exit, "exit");
+            zombies.forEach(z => createEntity(z, "zombie"));
+            document.getElementById("status").textContent = `Moves: ${moves}`;
+        }
+
+        function movePlayer(dx, dy) {
+            if (!gameStarted) return;
+            let newX = player.x + dx;
+            let newY = player.y + dy;
+            if (newX >= 0 && newX <= size && newY >= 0 && newY <= size) {
+                player.x = newX;
+                player.y = newY;
+                moves++;
+                drawBoard();
+                checkGameOver();
+            }
+        }
+
+        function moveZombies() {
+            if (!gameStarted) return;
+            zombies.forEach(z => {
+                let moveX = (Math.random() < 0.5 ? -40 : 40);
+                let moveY = (Math.random() < 0.5 ? -40 : 40);
+                let newX = z.x + moveX;
+                let newY = z.y + moveY;
+                if (newX >= 0 && newX <= size) z.x = newX;
+                if (newY >= 0 && newY <= size) z.y = newY;
+            });
+            drawBoard();
+            checkGameOver();
+        }
+
+        function checkGameOver() {
+            if (player.x === exit.x && player.y === exit.y) {
+                if (moves < highScore || highScore === 0) {
+                    highScore = moves;
+                    localStorage.setItem("highScore", highScore);
+                    document.getElementById("highScore").textContent = highScore;
+                }
+                showPopup(`🎉 You Escaped in ${moves} moves! 🏁`);
+            }
+            zombies.forEach(z => {
+                if (player.x === z.x && player.y === z.y) {
+                    showPopup("💀 Game Over! You got caught!");
+                }
+            });
+        }
+
+        function showPopup(message) {
+            popupMessage.textContent = message;
+            popup.style.display = "block";
+            gameStarted = false;
+        }
+
+        function resetGame() {
+            popup.style.display = "none";
+            startScreen.style.display = "block";
+        }
+
+        function startGame() {
+            startScreen.style.display = "none";
+            player = { x: 0, y: 0 };
+            zombies = Array.from({ length: 8 }, () => ({
+                x: Math.floor(Math.random() * 15) * 40,
+                y: Math.floor(Math.random() * 15) * 40
+            }));
+            moves = 0;
+            gameStarted = true;
+            drawBoard();
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowUp") movePlayer(0, -40);
+            if (e.key === "ArrowDown") movePlayer(0, 40);
+            if (e.key === "ArrowLeft") movePlayer(-40, 0);
+            if (e.key === "ArrowRight") movePlayer(40, 0);
+        });
+
+        setInterval(moveZombies, 400);
+        startScreen.style.display = "block";
+    </script>
+</body>
+</html>
