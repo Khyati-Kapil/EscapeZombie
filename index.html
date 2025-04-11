@@ -93,12 +93,12 @@
         const popupMessage = document.getElementById("popupMessage");
         const startScreen = document.getElementById("startScreen");
 
-        function createEntity(entity, className) {
-            let elem = document.createElement("div");
-            elem.classList.add("entity", className);
-            elem.style.left = `${entity.x}px`;
-            elem.style.top = `${entity.y}px`;
-            elem.textContent = className === "player" ? "👱🏼" : className === "exit" ? "🏁" : "🧟";
+        function createEntity({ x, y }, className) {
+            const elem = Object.assign(document.createElement("div"), {
+            className: `entity ${className}`,
+            style: `left: ${x}px; top: ${y}px;`,
+            textContent: { player: "👱🏼", exit: "🏁" }[className] || "🧟"
+            });
             board.appendChild(elem);
         }
 
